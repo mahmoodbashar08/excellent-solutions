@@ -3,7 +3,6 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PermissionsTable } from "@/components/PermissionsTable";
-
 export default function Home() {
   const router = useRouter();
   const { data: session, status } = useSession({
@@ -14,11 +13,10 @@ export default function Home() {
   });
 
   const handleSignOut = async () => {
-    await signOut({ redirect: false }); // Sign out without redirecting
-    router.push("/login"); // Redirect to the login page after signing out
+    await signOut({ redirect: false });
+    router.push("/login");
   };
 
-  // Loading state while session is being fetched
   if (status === "loading") {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -41,9 +39,9 @@ export default function Home() {
           Sign Out
         </button>
       </div>
-      {/* Permissions Table */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Your Permissions</h2>
+
         <PermissionsTable />
       </div>
     </div>

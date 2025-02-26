@@ -6,23 +6,23 @@ import { fetchAndTransformPermissions } from "@/lib/auth";
 
 type PermissionsContextType = {
   permissions: Record<string, boolean> | null;
+  testPermissions: Record<string, boolean>;
+  combinedPermissions: Record<string, boolean>;
   isLoading: boolean;
   error: string | null;
+  refetch: () => Promise<void>;
+  toggleTestPermission: (permission: string) => void;
 };
 
 const PermissionsContext = createContext<PermissionsContextType>({
   permissions: null,
+  testPermissions: {},
+  combinedPermissions: {},
   isLoading: false,
   error: null,
+  refetch: async () => {},
+  toggleTestPermission: () => {},
 });
-
-// Define some test permissions to add alongside fetched permissions
-const TEST_PERMISSIONS: Record<string, boolean> = {
-  "system.DELETE": false, // Example of a restricted permission
-  "system.FORMAT": false, // Another restricted permission
-  "test.VIEW": true, // Example of a test permission that is allowed
-  "test.EDIT": false, // Example of a test permission that is denied
-};
 
 export const PermissionsProvider = ({
   children,
@@ -34,41 +34,73 @@ export const PermissionsProvider = ({
     string,
     boolean
   > | null>(null);
+  const [testPermissions, setTestPermissions] = useState<
+    Record<string, boolean>
+  >({
+    "system.DELETE": false,
+    "system.FORMAT": false,
+    "test.VIEW": true,
+    "test.EDIT": false,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPermissions = async () => {
-      if (session?.accessToken) {
-        setIsLoading(true); // Set loading to true when starting the fetch
-        setError(null);
-        try {
-          // Fetch permissions from the server
-          const permissionsDict = await fetchAndTransformPermissions(
-            session.accessToken
-          );
+  // Combine permissions and testPermissions
+  const combinedPermissions = {
+    ...testPermissions,
+    ...(permissions || {}),
+  };
 
-          // Merge fetched permissions with test permissions
-          const finalPermissions = {
-            ...TEST_PERMISSIONS,
-            ...permissionsDict,
-          };
+  const fetchPermissions = async () => {
+    const accessToken = session?.accessToken as string | undefined;
 
-          setPermissions(finalPermissions);
-        } catch (err) {
-          console.error("Error fetching permissions:", err);
-          setError("Failed to fetch permissions");
-        } finally {
-          setIsLoading(false); // Set loading to false after fetch completes (success or error)
-        }
+    if (accessToken) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const permissionsDict = await fetchAndTransformPermissions(accessToken);
+        setPermissions(permissionsDict);
+      } catch (err) {
+        setError("Failed to fetch permissions");
+      } finally {
+        setIsLoading(false);
       }
-    };
+    } else {
+      console.log("No access token, skipping fetch");
+      setIsLoading(false);
+    }
+  };
 
+  const toggleTestPermission = (permission: string) => {
+    // Update testPermissions
+    setTestPermissions((prev) => ({
+      ...prev,
+      [permission]: !prev[permission],
+    }));
+
+    // Update original permissions
+    setPermissions((prev) => ({
+      ...(prev || {}), // Ensure prev is not null
+      [permission]: !prev?.[permission], // Toggle the permission in the original permissions
+    }));
+  };
+
+  useEffect(() => {
     fetchPermissions();
   }, [session?.accessToken]);
 
   return (
-    <PermissionsContext.Provider value={{ permissions, isLoading, error }}>
+    <PermissionsContext.Provider
+      value={{
+        permissions,
+        testPermissions,
+        combinedPermissions,
+        isLoading,
+        error,
+        refetch: fetchPermissions,
+        toggleTestPermission,
+      }}
+    >
       {children}
     </PermissionsContext.Provider>
   );

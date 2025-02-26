@@ -1,7 +1,8 @@
-"use client"; // Mark this component as a Client Component
+// app/layout.tsx
+"use client";
 
 import { SessionProvider } from "next-auth/react";
-import { Toaster } from "@/components/ui/toaster"; // Import the Toaster component
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { PermissionsProvider } from "@/context/PermissionsContext";
 
@@ -13,11 +14,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        {/* Wrap the application with SessionProvider */}
         <SessionProvider>
           <PermissionsProvider>
+            {/* Main content structure remains in child layouts */}
             {children}
-            {/* Add the Toaster component for notifications */}
             <Toaster />
           </PermissionsProvider>
         </SessionProvider>

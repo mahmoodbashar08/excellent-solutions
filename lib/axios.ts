@@ -1,5 +1,7 @@
+// axios.ts
 import Axios from "axios";
 import { API_URL } from "@/config";
+import { signOut } from "next-auth/react";
 
 const axios = Axios.create({
   baseURL: API_URL,
@@ -8,7 +10,11 @@ const axios = Axios.create({
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("Axios error:", error);
+    if (error.response?.status === 401) {
+      // Clear session and token
+      signOut({ callbackUrl: "/login" });
+      sessionStorage.removeItem("token"); // or localStorage if you're using that
+    }
     return Promise.reject(error);
   }
 );
