@@ -11,7 +11,6 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear session and token
       signOut({ callbackUrl: "/login" });
       sessionStorage.removeItem("token"); // or localStorage if you're using that
     }
